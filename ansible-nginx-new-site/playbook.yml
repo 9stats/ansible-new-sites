@@ -42,7 +42,7 @@
     - name: Install packages
       apt: pkg={{item}} state=latest
       with_items:
-        - python-mysqldb
+        - python3-mysqldb
 
     - name: "Create a new database with name {{ db_name }}"
       mysql_db:
