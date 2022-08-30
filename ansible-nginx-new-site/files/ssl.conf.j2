@@ -1,0 +1,34 @@
+### Nginx SSL Config
+#
+#   Copy this file and configure for your site/cert and include in server block e.g.
+#
+# server {
+#   listen 80;
+#   ...
+#   # Include SSL cert and config for this site
+#   include sites-available/ssl-{{ site }}.conf
+#   ...
+
+  listen 443 ssl http2;
+
+  ssl_certificate /etc/letsencrypt/live/{{ site }}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/{{ site }}/privkey.pem;
+  #ssl_certificate /etc/ssl/private/{{ site }}.pem
+  #ssl_certificate_key /etc/ssl/private/{{ site }}.key
+
+  ## SSL Ciphers and Hardening
+  ssl_protocols TLSv1.2 TLSv1.3;
+      ssl_prefer_server_ciphers on;
+      ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+      ssl_ecdh_curve secp384r1;
+      ssl_session_cache shared:SSL:10m;
+      ssl_session_tickets off;
+      ssl_stapling on;
+      ssl_stapling_verify on;
+
+  ## Diffe Hellman file needs generated
+  ## openssl dhparam -out /etc/ssl/private/dhparams.pem 4096
+      ssl_dhparam /etc/ssl/private/dhparams.pem;
+
+  ## Add Secure Headers
+      add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload";

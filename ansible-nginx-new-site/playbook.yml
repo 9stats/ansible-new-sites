@@ -1,0 +1,78 @@
+---
+- hosts: localhost
+  become: yes
+  vars:
+    document_root: /home/{{ customer }}/sites
+    app_root: html_demo_site-main
+  tasks:
+    - name: Create site directory
+      file:
+        path: "{{ document_root }}/{{ site }}"
+        state: directory
+        owner: "{{ customer }}"
+        group: "{{ customer }}"
+
+    - name: Copy website files to the server's document root
+      copy:
+        src: "{{ app_root }}"
+        dest: "{{ document_root }}/{{ site }}"
+        owner: "{{ customer }}"
+        group: "{{ customer }}"
+        mode: preserve
+
+    - name: Apply Nginx template
+      template:
+        src: files/nginx.conf.j2
+        dest: /etc/nginx/sites-available/{{ site }}.conf
+      notify: Restart Nginx
+
+    - name: Apply SSL template
+      template:
+        src: files/ssl.conf.j2
+        dest: /etc/nginx/sites-available/ssl-{{ site }}.conf
+      notify: Restart Nginx
+
+    - name: Enable new site
+      file:
+        src: /etc/nginx/sites-available/{{ site }}.conf
+        dest: /etc/nginx/sites-enabled/{{ numb }}-{{ site }}.conf
+        state: link
+      notify: Restart Nginx
+
+    - name: Install packages
+      apt: pkg={{item}} state=latest
+      with_items:
+        - python-mysqldb
+
+    - name: "Create a new database with name {{ db_name }}"
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+
+    - shell: /usr/bin/pwgen -s 40 1
+      register: user_password
+
+    - mysql_user:
+        name: "{{ db_name }}_usr"
+        password: "{{ user_password.stdout }}"
+        priv: '{{ db_name }}.*:ALL'
+        state: present
+
+    - name: Set mysql_native_password for {{ db_name }}_usr
+      command:
+        mysql -u root --execute="ALTER USER '{{ db_name }}_usr'@'localhost' IDENTIFIED WITH mysql_native_password BY '"{{ user_password.stdout }}"';"
+
+    - name: Create DB.txt
+      template:
+        src: files/DB.txt.j2
+        dest: /home/{{ customer }}/{{ site }}-DB.txt
+        owner: "{{ customer }}"
+        group: "{{ customer }}"
+        mode: 0600
+      when: customer is defined and site is defined and db_name is defined
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

@@ -1,0 +1,100 @@
+# NGINX configuration for WordPress. 
+#server {
+#    listen 80; # IPv4 
+#    server_name {{ site }}; 
+#    return 301 https://www.{{ site }}$request_uri;
+#}
+
+server {
+    listen 80; # IPv4
+ 
+    ## DOS protection
+    limit_conn conn_limit_per_ip 32;
+    server_name {{ site }} www.{{ site }};
+    
+    ##SSL
+    #include sites-available/ssl-{{ site }}.conf;
+
+    access_log /var/log/nginx/{{ site }}_access.log;
+    error_log /var/log/nginx/{{ site }}_error.log;
+
+    ## Root and index files.
+    root /home/{{ customer }}/sites/{{ site }};
+    index index.php index.html;
+
+    ## Cache control. Useful for WP super cache.
+    add_header Cache-Control "store, must-revalidate, post-check=0, pre-check=0";
+
+    ## Security headers
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options 'nosniff';
+    add_header X-XSS-Protection "1; mode=block";
+
+    # add_header Content-Security-Policy "default-src 'self';upgrade-insecure-requests;" always;
+
+    ## Include general nginx hardening rules.
+    include sites-available/general_hardening.conf;
+
+    ## Example include for nginx watcher config file. include /home/{{ customer }}/sites/{{ site }}/web/shared/nginx.conf; mainenance page
+    location @maintenance {
+        if (!-f $request_filename) {
+                rewrite ^(.*)$ /maintenance.html break;
+          }
+    }
+    ## Try the requested URI as files before handling it to PHP.
+    location / {
+        ## Enable maintenance page for all but selected IPs.
+        #allow 212.108.72.0/24; deny all; error_page 403 @maintenance;
+        
+        ## Include WordPress hardening rules.
+        include sites-available/wp_hardening.conf;
+        ## Include the WP supercache plugin config.
+        include sites-available/wp_supercache.conf;
+        ## Use PATH_INFO for translating the requests to the FastCGI. This config follows Igor's suggestion here: http://forum.nginx.org/read.php?2,124378,124582. This is preferable to using: fastcgi_split_path_info 
+        ## ^(.+\.php)(.*)$ It saves one regex in the location. Hence it's faster. Regular PHP processing.
+        location ~ ^(?<script>.+\.php)(?<path_info>.*)$ {
+            # Zero-day exploit defense. http://forum.nginx.org/read.php?2,88845,page=3 Won't work properly (404 error) if the file is not stored on this server, which is entirely possible with php-fpm/php-fcgi. Comment the 
+            # 'try_files' line out if you set up php-fpm/php-fcgi on another machine.  And then cross your fingers that you won't get hacked.
+            try_files $uri =404;
+            
+   
+            ## DOS protection
+            limit_req zone=req_limit_per_ip burst=120 nodelay;
+            include fastcgi.conf;
+            ## The fastcgi_params must be redefined from the ones given in fastcgi.conf. No longer standard names but arbitrary: named patterns in regex.
+            fastcgi_param SCRIPT_FILENAME $document_root$script;
+            fastcgi_param SCRIPT_NAME $script;
+            fastcgi_param PATH_INFO $path_info;
+            ## Passing the request upstream to the FastCGI listener.
+            fastcgi_pass {{ customer }}cgi;
+        
+        }
+        ## All files/directories that are protected and unaccessible from the web.
+        location ~* ^.*(\.(?:git|svn|htaccess|txt|pot|conf?))$ {
+            ## DOS protection
+            limit_req zone=req_limit_per_ip burst=120 nodelay;
+            deny all;
+        }
+        ## Static files are served directly.
+        location ~* \.(?:css|gif|htc|ico|js|jpe?g|png|swf|ttf|otf|eot|woff|svg|svgz)$ {
+            expires max;
+            log_not_found off;
+            access_log off;
+            ## No need to bleed constant updates. Send the all shebang in one fell swoop.
+            tcp_nodelay off;
+            ## Set the OS file cache.
+            open_file_cache max=1000 inactive=120s;
+            open_file_cache_valid 45s;
+            open_file_cache_min_uses 2;
+            open_file_cache_errors off;
+        }
+        } # / location
+        ## The 'final' attempt to serve the request.
+        location @nocache {
+            ## DOS protection
+            limit_req zone=req_limit_per_ip burst=120 nodelay;
+            try_files $uri $uri/ /index.php?q=$uri&$args;
+        }
+        ## Including the php-fpm status and ping pages config. Uncomment to enable if you're running php-fpm.
+        #include php_fpm_status_vhost.conf;
+} # server
