@@ -46,7 +46,7 @@
 
     - name: "Create a new database with name {{ db_name }}"
       mysql_db:
-        name: "{{ db_name }}"
+        name: "{{ db_name }}_db"
         state: present
 
     - shell: /usr/bin/pwgen -s 40 1
@@ -55,7 +55,7 @@
     - mysql_user:
         name: "{{ db_name }}_usr"
         password: "{{ user_password.stdout }}"
-        priv: '{{ db_name }}.*:ALL'
+        priv: '{{ db_name }}_db.*:ALL'
         state: present
 
     - name: Set mysql_native_password for {{ db_name }}_usr
