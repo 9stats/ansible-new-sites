@@ -44,7 +44,7 @@
       with_items:
         - python3-mysqldb
 
-    - name: "Create a new database with name {{ db_name }}"
+    - name: "Create a new database with name {{ db_name }}_db"
       mysql_db:
         name: "{{ db_name }}_db"
         state: present
