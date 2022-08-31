@@ -70,9 +70,27 @@
         group: "{{ customer }}"
         mode: 0600
       when: customer is defined and site is defined and db_name is defined
-
+      
+    - name: Test for running nginx
+      shell: ps axuf|grep 'nginx'|grep -v "grep" | tr -d "\n" | cat
+      register: test_running_nginx
+      changed_when: False
+      tags: restart-nginx
+      
+    - name: First check the configuration
+      shell: /usr/sbin/nginx -t
+      register: test_nginx_config
+      when: test_running_nginx.stdout != ""
+      changed_when: False
+      ignore_errors: True
+      tags: restart-nginx
+      
   handlers:
     - name: Restart Nginx
       service:
         name: nginx
         state: restarted
+        when: test_running_nginx.stdout != "" and test_nginx_config.rc == 0
+        tags: restart-nginx
+        
+        
