@@ -13,8 +13,8 @@
 
   ssl_certificate /etc/letsencrypt/live/{{ site }}/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/{{ site }}/privkey.pem;
-  #ssl_certificate /etc/ssl/private/{{ site }}.pem
-  #ssl_certificate_key /etc/ssl/private/{{ site }}.key
+  #ssl_certificate /etc/ssl/private/{{ site }}.pem;
+  #ssl_certificate_key /etc/ssl/private/{{ site }}.key;
 
   ## SSL Ciphers and Hardening
   ssl_protocols TLSv1.2 TLSv1.3;
