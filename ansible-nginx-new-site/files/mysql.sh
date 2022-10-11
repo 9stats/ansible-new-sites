@@ -29,4 +29,4 @@ echo  db=$db dbuser=$dbuser dbuserpass=$dbuserpass > /home/$user/$db.txt
 mysql -u root --execute="show databases"
 
 
-echo "Database created DB credential registered in /home/$user/$db.txt
+echo "Database created DB credential registered in /home/$user/$db.txt"
