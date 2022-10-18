@@ -1,0 +1,18 @@
+
+---
+- name: Install Nginxwatcher systemd service
+  hosts: localhost
+  vars:
+  # Update list of nginx config files to be watched provided by Wordpress Dev
+  # Formatting and spacing must be exact
+  - watched_files:
+    - "/home/user/sites/example.com/web/shared/nginx.conf"
+    #- "/home/user/sites/example.com/web/nginx.conf"
+
+  # Update to appropriate user/location for nginx reload error log
+  # Formatting and spacing must be exact
+  - error_file: "/home/user/lastreload.log"
+
+  roles:
+  - role: nginxwatcher
+    when: watched_files is defined
