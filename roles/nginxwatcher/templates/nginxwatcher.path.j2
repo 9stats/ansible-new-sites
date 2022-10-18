@@ -1,0 +1,11 @@
+[Unit]
+Description=Nginx watcher conf file monitor
+
+[Path]
+{% for file in watched_files %}
+PathChanged={{ file }}
+{% endfor %}
+Unit=nginxwatcher.service
+
+[Install]
+WantedBy=multi-user.target

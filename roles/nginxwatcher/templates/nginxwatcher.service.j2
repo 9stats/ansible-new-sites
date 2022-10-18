@@ -1,0 +1,10 @@
+[Unit]
+Description=Nginx watcher reload service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/nginx -s reload
+{% if error_file is defined %}StandardError=file:{{ error_file }}{% endif %}
+
+[Install]
+WantedBy=multi-user.target
