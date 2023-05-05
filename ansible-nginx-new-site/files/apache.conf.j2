@@ -19,7 +19,7 @@
         </Directory>
 
         <FilesMatch "\.php$">
-                SetHandler "proxy:unix:///var/run/php/{{ customer }}8.0-fpm.sock|fcgi://sites/"
+                SetHandler "proxy:unix:///var/run/php/{{ customer }}{{phpver}}-fpm.sock|fcgi://sites/"
         </FilesMatch>
 </VirtualHost>
 
@@ -52,6 +52,6 @@
 #        </Directory>
 #
 #        <FilesMatch "\.php$">
-#                SetHandler "proxy:unix:///var/run/php/{{ customer }}8.0-fpm.sock|fcgi://sites/"
+#                SetHandler "proxy:unix:///var/run/php/{{ customer }}{{phpver}}-fpm.sock|fcgi://sites/"
 #        </FilesMatch>
 #</VirtualHost>
