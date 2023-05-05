@@ -1,0 +1,69 @@
+---
+- hosts: localhost
+  become: yes
+  vars:
+    document_root: /home/{{ customer }}/sites
+    app_root: html_demo_site-main
+  tasks:
+    - name: Create site directory
+      file:
+        path: "{{ document_root }}/{{ site }}"
+        state: directory
+        owner: "{{ customer }}"
+        group: "{{ customer }}"
+        
+    - name: Apply Apache template
+      template:
+        src: files/apache.conf.j2
+        dest: /etc/apache2/sites-available/{{ site }}.conf
+      notify: Restart Apache
+
+    - name: Apply SSL template
+      template:
+        src: files/ssl.conf.j2
+        dest: /etc/apache2/sites-available/ssl-{{ site }}.conf
+      notify: Restart Apache
+
+    - name: Enable new site
+      shell: a2ensite {{ site }}
+      notify: Restart Apache
+
+    - name: Install packages
+      apt: pkg={{item}} state=latest
+      with_items:
+        - python3-mysqldb
+        - apache2
+        - libapache2-mod-wsgi-py3
+
+    - name: "Create a new database with name {{ db_name }}_db"
+      mysql_db:
+        name: "{{ db_name }}_db"
+        state: present
+
+    - shell: /usr/bin/pwgen -s 40 1
+      register: user_password
+
+    - mysql_user:
+        name: "{{ db_name }}_usr"
+        password: "{{ user_password.stdout }}"
+        priv: '{{ db_name }}_db.*:ALL'
+        state: present
+
+    - name: Set mysql_native_password for {{ db_name }}_usr
+      command:
+        mysql -u root --execute="ALTER USER '{{ db_name }}_usr'@'localhost' IDENTIFIED WITH mysql_native_password BY '"{{ user_password.stdout }}"';"
+
+    - name: Create DB.txt
+      template:
+        src: files/DB.txt.j2
+        dest: /home/{{ customer }}/{{ site }}-DB.txt
+        owner: "{{ customer }}"
+        group: "{{ customer }}"
+        mode: 0600
+      when: customer is defined and site is defined and db_name is defined
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
