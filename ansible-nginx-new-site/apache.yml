@@ -16,11 +16,17 @@
       template:
         src: files/apache.conf.j2
         dest: /etc/apache2/sites-available/{{ site }}.conf
-      notify: Restart Apache
+      with_items: "{{ site }}"
+      when: site is defined and customer is defined
+      
 
     - name: Enable new site
-      shell: a2ensite {{ site }}
-      notify: Restart Apache
+      file:
+        src: /etc/apache2/sites-available/{{ site }}.conf
+        dest: /etc/apache2/sites-enabled/{{ numb }}-{{ site }}.conf
+        state: link
+      with_items: "{{ site }}" 
+      register: _apache2_sites_enabled
 
     - name: Install packages
       apt: pkg={{item}} state=latest
