@@ -3,7 +3,7 @@
   become: yes
   vars:
     document_root: /home/{{ customer }}/sites
-    app_root: html_demo_site-main
+    
   tasks:
     - name: Create site directory
       file:
@@ -16,12 +16,6 @@
       template:
         src: files/apache.conf.j2
         dest: /etc/apache2/sites-available/{{ site }}.conf
-      notify: Restart Apache
-
-    - name: Apply SSL template
-      template:
-        src: files/ssl.conf.j2
-        dest: /etc/apache2/sites-available/ssl-{{ site }}.conf
       notify: Restart Apache
 
     - name: Enable new site
