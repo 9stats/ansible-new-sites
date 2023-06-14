@@ -1,4 +1,4 @@
-4 lines (8 sloc)  517 Bytes
+
  
 
 read -p 'Existing customer user account to run as: ' customer
