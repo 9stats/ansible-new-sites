@@ -24,7 +24,7 @@ mysql -u root --execute="GRANT ALL ON $db.* TO $dbuser@'127.0.0.1';"
 
 mysql -u root --execute="flush privileges;"
 
-echo  db=$db dbuser=$dbuser dbuserpass=$dbuserpass > /home/$user/$db.txt
+echo -e "db=$db\ndbuser=$dbuser\ndbuserpass=$dbuserpass" > "/home/$user/$db.txt"
 
 mysql -u root --execute="show databases"
 
